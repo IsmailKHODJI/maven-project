@@ -1,0 +1,48 @@
+pipeline {
+    agent any // tout agent disponible pour mettre à jour le job
+    tools {
+        maven 'localMaven'
+    }
+    stages {
+        stage('Clone Codebase') {
+            steps {
+                echo 'Clone github repos'
+                git 'https://github.com/IsmailKHODJI/maven-project.git'
+            }
+        }
+        stage('Compile') {
+            steps {
+                withMaven(maven:'localMaven')
+                {
+                    //sh "mvn compile"
+                    bat "mvn compile"
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                withMaven(maven:'localMaven')
+                {
+                    bat "mvn test"
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                withMaven(maven:'localMaven')
+                {
+                    bat "mvn -B -DskipTests clean package"
+                }
+            }
+        }
+        stage('Analyse and send Resulat to Sonar') {
+            steps {
+                withSonarQubeEnv(installationName: 'localSonar', credentialsId: 'cred4sonar')
+                {
+                    bat "mvn -B -DskipTests clean package sonar:sonar"
+                }
+            }
+        }
+    }
+}
